@@ -23,11 +23,15 @@
             src = self;
             cargoLock.lockFile = ./Cargo.lock;
 
-            nativeBuildInputs = with pkgs; [ pkg-config ] ++ lib.optional (chromium != null) makeWrapper;
+            nativeBuildInputs = with pkgs; [ pkg-config installShellFiles ] ++ lib.optional (chromium != null) makeWrapper;
             buildInputs = with pkgs; [ openssl ];
 
             # network-dependent tests can't run in the sandbox
             doCheck = false;
+
+            postInstall = ''
+              installShellCompletion --cmd iherb-cli --zsh <(COMPLETE=zsh "$out/bin/iherb-cli")
+            '';
 
             postFixup = pkgs.lib.optionalString (chromium != null) ''
               wrapProgram $out/bin/iherb-cli \

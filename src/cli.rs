@@ -60,6 +60,10 @@ pub enum Commands {
         #[arg(long, value_enum)]
         section: Option<Section>,
     },
+
+    /// Emit shell completions on stdout
+    #[command(hide = true)]
+    Completions { shell: clap_complete::Shell },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]

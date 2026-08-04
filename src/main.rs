@@ -8,7 +8,7 @@ mod output;
 mod scraper;
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands, Section, SortOrder};
 use config::AppConfig;
 use std::time::SystemTime;
@@ -19,7 +19,15 @@ use crate::scraper::navigation::Navigator;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    clap_complete::CompleteEnv::with_factory(Cli::command).complete();
     let cli = Cli::parse();
+
+    // Completions run without touching the config file, so a broken config never breaks
+    // shell startup.
+    if let Commands::Completions { shell } = &cli.command {
+        clap_complete::generate(*shell, &mut Cli::command(), "iherb-cli", &mut std::io::stdout());
+        return Ok(());
+    }
 
     let filter = if cli.debug {
         "iherb_cli=debug"
@@ -70,6 +78,7 @@ async fn main() -> Result<()> {
         Commands::Product { id_or_url, section } => {
             cmd_product(&config, &mut browser_session, &id_or_url, section).await?;
         }
+        Commands::Completions { .. } => unreachable!(),
     }
 
     if let Some(session) = browser_session.take() {
