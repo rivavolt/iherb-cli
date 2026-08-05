@@ -49,12 +49,21 @@
         });
 
       devShells = forAllSystems (system:
-        let pkgs = pkgsFor system; in
+        let
+          pkgs = pkgsFor system;
+          chromium = if pkgs.stdenv.isDarwin then null else pkgs.chromium;
+        in
         {
-          default = pkgs.mkShell {
+          # Binaries built in the shell are unwrapped, so without IHERB_BROWSER_PATH
+          # they fall back to downloading Chrome for Testing, which ships no aarch64
+          # Linux build and dies with "Exec format error".
+          default = pkgs.mkShell ({
             inputsFrom = [ self.packages.${system}.iherb-cli ];
-            packages = with pkgs; [ rust-analyzer clippy rustfmt ];
-          };
+            packages = with pkgs; [ rust-analyzer clippy rustfmt ]
+              ++ lib.optional (chromium != null) chromium;
+          } // pkgs.lib.optionalAttrs (chromium != null) {
+            IHERB_BROWSER_PATH = pkgs.lib.getExe chromium;
+          });
         });
     };
 }
